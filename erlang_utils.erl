@@ -3,7 +3,7 @@
 %%% @doc
 %%% some good functions for erlang
 %%% @end
-%%% #Time-stamp: <liyouyou 20130403 17:18:21>
+%%% #Time-stamp: <syrett 2013-07-11 13:47:39>
 %%% Created :  20 Jul 2012 by syrett <youyou.li78@gmail.com>
 %%%-------------------------------------------------------------------
 
@@ -115,3 +115,74 @@ file_diff() ->
 exit() ->
     catch apply(erlang_utils, a, []).
 %    erlang:display(A).
+
+
+
+%% @doc
+%% @spec get_tuplelist(String) -> TupleList()
+%% 把有规则的string字符串解析为[{key, value}....]的格式
+%% example: [{k1, v1},{k2,v2}] = get_tuplelist("k1=v1;k2=v2")
+%% @end
+get_tuplelist(String) ->
+    get_tuplelist(String, "", []).
+
+get_tuplelist([], _, TL) ->
+    TL;
+get_tuplelist([$= | T], Key, TL) ->
+    {Value, T1} = get_value(T),
+    get_tuplelist(T1, "", [{Key, Value}|TL]);
+get_tuplelist([H|T], Key, TL) ->
+    get_tuplelist(T, Key ++ [H], TL).
+
+get_value(String) ->
+    get_value(String, "").
+
+get_value([], Value) ->
+    {Value, []};
+get_value([$;|T], Value) ->
+    {Value, T};
+get_value([H|T], Value) ->
+    get_value(T, Value ++ [H]).
+
+fun_time(Module, Func, Args) ->
+    T1 = now(),
+    apply(Module, Func, Args),
+    T2 = now(),
+    Diff = timer:now_diff(T2,T1),
+    io:format("diff time:~p\n", [Diff]).
+    
+    
+%%to_datetime(<<"Fri, 10 May 2013 09:50:03 GMT">>) ->
+to_datetime(Bin) when is_binary(Bin) ->
+    to_datetime(binary_to_list(Bin));
+to_datetime(Str) ->
+    Day = list_to_integer(string:substr(Str, 6,2)),
+    Month1 = string:substr(Str, 9, 3),
+    Month = to_month(Month1),
+    Year = list_to_integer(string:substr(Str, 13, 4)),
+    Time1 = string:substr(Str, 18, 8),
+    Time = [list_to_integer(X) || X <- string:tokens(Time1, ":")],
+    {{Year, Month, Day}, list_to_tuple(Time)}.
+
+to_month("Jan") -> 1;
+to_month("Feb") -> 2;
+to_month("Mar") -> 3;
+to_month("Apr") -> 4;
+to_month("May") -> 5;
+to_month("Jun") -> 6;
+to_month("Jul") -> 7;
+to_month("Aug") -> 8;
+to_month("Sep") -> 9;
+to_month("Oct") -> 10;
+to_month("Nov") -> 11;
+to_month("Dec") -> 12.
+
+%% 小写换成大写, '-' 换成 '_'
+param_char(Int_char) when Int_char < 123 and Int_char > 60 -> 
+    Int_char - 32;
+param_char($-) -> $_;
+param_char(Ch) -> Ch.
+
+%% 高亮显示字体
+highlight(String)->
+    lists:flatten(io_lib:format("\033[0;1m~s\033[0m",[String])).
